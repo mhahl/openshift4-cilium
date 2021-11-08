@@ -1,0 +1,22 @@
+{
+	"kind": "Cluster",
+	"name": "{{cluster.name}}",
+	"additional_ntp_source": "{{cluster.additional_ntp_sources}}",
+	"base_dns_domain": "{{cluster.base_dns_domain}}",
+	"hosts": [],
+	"user_managed_networking": true,
+	"cluster_network_cidr": "{{cluster.cluster_network_cidr}}",
+	"cluster_network_host_prefix": {{cluster.cluster_network_host_prefix}},
+	"email_domain": "{{cluster.email_domain}}",
+	"high_availability_mode": "None",
+	"hyperthreading": "all",
+	"ocp_release_image": "{{cluster.ocp_release_image}}",
+	"openshift_version": "{{cluster.openshift_version}}",
+	"schedulable_masters": true,
+	"service_network_cidr": "{{cluster.service_network_cidr}}",
+	"vip_dhcp_allocation": false,
+	"pull_secret": {{pull_secret | quote}},
+	"host_networks": "{{cluster.cluster_host_network}}",
+	"machine_network_cidr": "{{cluster.cluster_machine_network_cidr}}",
+	"ssh_public_key": {{ssh_public_key | quote}}
+}

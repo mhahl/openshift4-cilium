@@ -1,0 +1,16 @@
+---
+
+- name: base64 encode
+  shell: "base64 -w 0 {{item}}"
+  register: b64file
+
+- debug:
+    var: b64file
+
+- name: Add too cluster manifests
+  uri:
+    method: POST
+    url: "{{assisted_service_api}}/api/assisted-install/v1/clusters/{{kluster.json.id|default(cluster_id)}}/manifests"
+    body_format: json
+    body: { "file_name": "{{item | basename}}", "folder": "manifests", "content": "{{b64file.stdout | escape}}"}
+    status_code: 201

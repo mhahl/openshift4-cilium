@@ -1,0 +1,58 @@
+---
+- hosts: localhost
+  vars:
+    assisted_service_api: "https://assisted-ui.apps.k8s.hahl.id.au"
+    pull_secret: ""
+    ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCmXh8WLeJWy3y2ZFeOMB8qrpIhGSpSiWeJqzkG7b2dm9H+uccRC8bXcVjn/6VLJxJxQkokhyv44lLG8NvJTIjT0NsA2qpCSITUcDmiPn9fW25DhWLg64JETvZpF9ry5uFQHiD8xqa8JHqXgpTZBVWfRmud0l/TTZwf0yOKDcoYn8FZjOc7lyIEQLix/N4mDY2FkOHlTJTVwfKy1XdoeZb7hq/LV8qDw9tAdWnYZrgGQmcdk+x7ULXtIk5UCOeneuO8CKoDVr2PIbTQp0uxwP3AqmZEFzDNQEzc/kSHcxIv8NiG1cp6AQvrOQTYPw0OC3iAhlTz4hZy4Ba/BO0fXNjRSy79zZU9raWim04oQGfbccDWmw1qnhqtrzdyie6YxeEVhoNj7oBO6IwhGumYrg8lm7mIhTa8NReKUdh0GHI4M8Ax2lN8l+YMdpwJM1ZLqLsgQQi01jNMPK+mzzjizn2aDLfFoolO01pfzEGP5+93RW8WhXHlymkXY0otK6ev/jM= mhahl@syd-vdi-02.hahl.id.au"
+
+    cilium:
+      git: https://github.com/cilium/cilium-olm
+      branch: "master"
+      version: "v1.10.4"
+
+    cluster:
+      name: "infra"
+      additional_ntp_sources: "ntp1.anu.edu.au"
+      base_dns_domain: "hahl.id.au"
+      email_domain: "hahl.id.au"
+      ocp_release_image: "quay.io/openshift-release-dev/ocp-release:4.8.14-x86_64"
+      openshift_version: "4.8.14"
+      cluster_host_network: "172.16.17.96/27"
+      cluster_network_cidr: "10.128.0.0/14"
+      cluster_network_host_prefix: 23
+      cluster_machine_network_cidr: "172.16.17.96/27"
+      service_network_cidr: "172.30.0.0/16"
+  tasks:
+
+  - name: Create new cluster
+    uri: 
+      body_format: json
+      url: "{{assisted_service_api}}/api/assisted-install/v1/clusters"
+      method: POST
+      body: "{{lookup('template', 'cluster.json')}}"
+      status_code: 201
+    register: kluster
+
+  - name: Patch cluster network for Cilium
+    uri: 
+      method: PATCH
+      url: "{{assisted_service_api}}/api/assisted-install/v1/clusters/{{kluster.json.id}}/install-config"
+      body: '"{\"networking\":{\"networkType\":\"Cilium\"}}"'
+      body_format: json
+      status_code: 201
+
+  - name: Clone Cilium git repo
+    ansible.builtin.git:
+      repo: "{{cilium.git}}"
+      dest: /tmp/cilium-olm
+      refspec: "{{cilium.branch}}"
+      force: yes
+
+  - name: Template cilium manifests
+    ansible.builtin.template:
+      src: cluster-network-07-cilium-ciliumconfig.yaml
+      dest: "/tmp/cilium-olm/manifests/cilium.{{cilium.version}}/cluster-network-07-cilium-ciliumconfig.yaml"
+
+  - name: Create manifests
+    include_tasks: "_create_manifest.yaml"
+    with_fileglob: "/tmp/cilium-olm/manifests/cilium.{{cilium.version}}/*"
