@@ -2,7 +2,8 @@
 
 1. Configure your vars
 
-```
+```yaml
+---
 assisted_service_api: "https://assisted-ui.apps.k8s.hahl.id.au"
 pull_secret: ""
 ssh_public_key: ""
@@ -28,4 +29,53 @@ cluster:
 
 ```
 ansible-playbook cluster.yaml
+```
+
+## Optional
+Cilium Config example without using sha256sum.
+
+* Foreach deployment, add section for image to config.
+* Add `useDigest: false` to ensure it will use a tag instead.
+* Read https://github.com/cilium/cilium/blob/master/install/kubernetes/cilium/values.yaml for a list of values.
+
+```yaml
+---
+apiVersion: cilium.io/v1alpha1
+kind: CiliumConfig
+metadata:
+  name: cilium
+  namespace: cilium
+spec:
+  ipam:
+    mode: "cluster-pool"
+    operator:
+      clusterPoolIPv4PodCIDR: "{{cluster.cluster_network_cidr}}"
+      clusterPoolIPv4MaskSize: "{{cluster.cluster_network_host_prefix}}"
+  nativeRoutingCIDR: "{{cluster.cluster_network_cidr}}"
+  cni:
+    binPath: "/var/lib/cni/bin"
+    confPath: "/var/run/multus/cni/net.d"
+  prometheus:
+    serviceMonitor: {enabled: false}
+  hubble:
+    tls: {enabled: false}
+   operator:
+    image:
+      pullPolicy: IfNotPresent
+      repository: harbor.apps.infra.hahl.id.au/cilium/operator
+      tag: v1.10.4
+      useDigest: false # Imortant
+   clustermesh:
+    apiserver:
+      etcd:
+        image:
+          pullPolicy: IfNotPresent
+          repository: harbor.apps.infra.hahl.id.au/coreos/etcd
+          tag: 3.4.13
+      image:
+        pullPolicy: IfNotPresent
+        repository: harbor.apps.infra.hahl.id.au/coreos/etcd
+        tag: v1.10.4
+        useDigest: false # Imortant!
+
 ```
