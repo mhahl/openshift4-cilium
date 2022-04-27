@@ -74,7 +74,7 @@ spec:
           tag: 3.4.13
       image:
         pullPolicy: IfNotPresent
-        repository: harbor.apps.infra.hahl.id.au/coreos/etcd
+        repository: harbor.apps.infra.hahl.id.au/cilium/apiserver # Example
         tag: v1.10.4
         useDigest: false # Imortant!
 
